@@ -178,7 +178,7 @@ def main():
     # Запись инцидентов в файл
     with open('resources{}incidents.db'.format(os.sep), 'bw') as file_dump:
         pickle.dump(incidents, file_dump)
-    
+    print('Время : {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     # Создание выходного файла
     print('Генерация файла отчета...')
     generate_report_file(incidents)
