@@ -75,6 +75,9 @@ def generate_report_file(incidents):
     
     # Получение профилей линий с DSLAM
     data_profiles = SQL.get_data_profiles(cursor)
+    
+    #Получение  скоростей
+    all_speed = SQL.get_all_speed(cursor)
 
     # Сортировка инцидентов по дате
     incidents = sort_incidents(incidents)
@@ -86,7 +89,7 @@ def generate_report_file(incidents):
             incident.tariff_speed = accounts_info[incident.account_name]['tariff_speed']
             incident.tv = accounts_info[incident.account_name]['tv']
         incident.day_count = (datetime.datetime.now() - incident.end_time).days
-        speed = SQL.get_speed(cursor, incident)
+        speed = all_speed.get('{}/{}/{}'.format(incident.hostname, incident.board, incident.port),  {'min_speed':  '-', 'avg_speed': '-'})
         incident.min_speed = speed['min_speed']
         incident.avg_speed = speed['avg_speed']            
     

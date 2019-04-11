@@ -38,33 +38,26 @@ def get_data_profiles(cursor):
     return result
 
 
-def get_speed(cursor, incident):
-    if incident.hostname is None:
-        return {'min_speed': '-', 'avg_speed': '-'}
-    between = get_between_str(incident)
+def get_all_speed(cursor):
+    today = '{} 23:59:59'.format(datetime.datetime.now().strftime('%Y-%m-%d'))
+    yesterday = '{} 00:00:00'.format((datetime.datetime.now().date() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
+    result = {}
     command = '''
             SELECT
+                hostname,
+                board,
+                port,
                 ROUND(MIN(max_dw_rate)),
                 ROUND(AVG(max_dw_rate))
             FROM
                 data_dsl
             WHERE
-                hostname = '{}'
-                AND board = {}
-                AND port = {}
-                AND datetime BETWEEN STR_TO_DATE('{}', '%Y-%m-%d %H:%i:%s')
-                AND STR_TO_DATE('{}', '%Y-%m-%d %H:%i:%s')    
-    '''.format(incident.hostname, incident.board, incident.port, between['start'], between['end'])
+                datetime BETWEEN STR_TO_DATE('{}', '%Y-%m-%d %H:%i:%s')
+                AND STR_TO_DATE('{}', '%Y-%m-%d %H:%i:%s')
+            GROUP BY hostname, board, port
+    '''.format(yesterday, today)
     cursor.execute(command)
-    speed = cursor.fetchone()
-    return {'min_speed': speed[0], 'avg_speed': speed[1]}
-
-
-def get_between_str(incident):
-    yesterday = datetime.datetime.now().date() - datetime.timedelta(days=1)
-    delta = yesterday - incident.end_time.date()
-    if delta.days > 0:
-        start = '{} 00:00:00'.format(yesterday.strftime('%Y-%m-%d'))
-    else:
-        start = '{}:00:00'.format((incident.end_time + datetime.timedelta(seconds=3600)).strftime('%Y-%m-%d %H')) 
-    return {'start': start, 'end': '{} 23:59:59'.format(datetime.datetime.now().strftime('%Y-%m-%d'))}
+    data = cursor.fetchall()
+    for port in data:
+        result['{}/{}/{}'.format(port[0], port[1], port[2])] = {'min_speed':  port[3], 'avg_speed': port[4]}    
+    return result
