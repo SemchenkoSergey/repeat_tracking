@@ -40,6 +40,8 @@ def update_accounts_data(arguments):
     prev_day = datetime.date.today() - datetime.timedelta(days=1)
     # Открытие соединения Onyma
     onyma = Web.connect_onyma()
+    if onyma is None:
+        return False
     
     for incident in keys:
         if (incidents[incident].proc_date == datetime.date.today()) or (incidents[incident].bill is None):
@@ -72,7 +74,7 @@ def generate_report_file(incidents):
     cursor = connect.cursor()
     # Получение данных о абонентах из базы данных
     accounts_info = SQL.get_accounts_info(cursor)
-    
+
     # Получение профилей линий с DSLAM
     data_profiles = SQL.get_data_profiles(cursor)
     

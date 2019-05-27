@@ -159,6 +159,8 @@ def get_account_data(onyma, incident,  date):
     #re_hostname = r'(STV[\w-]+?) atm \d/(\d+)/\d/(\d+)'
     try:
         html = onyma.get("https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=201&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid))        
+        #print("https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=201&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid))
+        #print(html.text)
         result['session_count'] = int(re.search(r'<td class="foot">Все</td><td class="pgout" colspan="5">.+?<b>(\d+)</b>',  html.text.__repr__()).group(1))
         argus_data = re.search(re_hostname, html.text.__repr__())
         if argus_data:
