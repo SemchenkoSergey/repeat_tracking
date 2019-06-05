@@ -118,12 +118,15 @@ def get_onyma_params(arguments):
                     # Не удалось найти номер телефона по порту
                     print('Не удалось найти номер телефона по порту DSLAM ({})'.format(incident))
                     continue
-        if params['bill']:
+        if params:
             incidents[incident].account_name = params['account_name']
             incidents[incident].bill = params['bill']
             incidents[incident].dmid = params['dmid']
             incidents[incident].tmid = params['tmid']
-            print('Найдены параметры для инцидента {}: account_name - {}, bill - {}, dmid - {}, tmid - {}'.format(incident, params['account_name'], params['bill'], params['dmid'], params['tmid']))
+            if params['bill']:
+                print('Найдены параметры для инцидента {}: account_name - {}, bill - {}, dmid - {}, tmid - {}'.format(incident, params['account_name'], params['bill'], params['dmid'], params['tmid']))
+            else:
+                print('Найдено имя аккаунта для {}: {}'.format(incident, params['account_name']))
         else:
             continue
     # Закрытие соединений
