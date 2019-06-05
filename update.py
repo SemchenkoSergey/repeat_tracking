@@ -89,7 +89,10 @@ def get_onyma_params(arguments):
         params = False
         if incidents[incident].account_name:
             # Если номер карты есть, но параметры еще не определены
+            print('Новая попытка получить параметры для {}'.format(incidents[incident].account_name))
             params = Web.find_login_param(onyma, account_name=incidents[incident].account_name)
+            if not params['bill']:
+                print('не удалось найти параметры для {}'.format(incidents[incident].account_name))
         else:
             login = Web.get_login(argus, incidents[incident].incident_number)
             if login:
@@ -115,14 +118,14 @@ def get_onyma_params(arguments):
                     # Не удалось найти номер телефона по порту
                     print('Не удалось найти номер телефона по порту DSLAM ({})'.format(incident))
                     continue
-            if params:
-                incidents[incident].account_name = params['account_name']
-                incidents[incident].bill = params['bill']
-                incidents[incident].dmid = params['dmid']
-                incidents[incident].tmid = params['tmid']
-                print('Найдены параметры для инцидента {}: account_name - {}, bill - {}, dmid - {}, tmid - {}'.format(incident, params['account_name'], params['bill'], params['dmid'], params['tmid']))
-            else:
-                continue
+        if params['bill']:
+            incidents[incident].account_name = params['account_name']
+            incidents[incident].bill = params['bill']
+            incidents[incident].dmid = params['dmid']
+            incidents[incident].tmid = params['tmid']
+            print('Найдены параметры для инцидента {}: account_name - {}, bill - {}, dmid - {}, tmid - {}'.format(incident, params['account_name'], params['bill'], params['dmid'], params['tmid']))
+        else:
+            continue
     # Закрытие соединений
     connect.close()
     onyma.close()
