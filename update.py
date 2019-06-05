@@ -69,6 +69,7 @@ def read_argus_file(incidents):
 
 def get_onyma_params(arguments):
     print('запуск потока обработки инцидентов...')
+    count = 0
     incidents = arguments[0]
     keys = arguments[1]
     thread_number = arguments[2]
@@ -81,6 +82,7 @@ def get_onyma_params(arguments):
     argus = Web.connect_argus()
     
     for incident in keys:
+        count += 1
         # Если параметры уже установлены
         if incidents[incident].bill is not None:
             continue
@@ -91,8 +93,9 @@ def get_onyma_params(arguments):
             # Если номер карты есть, но параметры еще не определены
             print('Новая попытка получить параметры для {}'.format(incidents[incident].account_name))
             params = Web.find_login_param(onyma, account_name=incidents[incident].account_name)
-            if not params['bill']:
-                print('не удалось найти параметры для {}'.format(incidents[incident].account_name))
+            if params:
+                if not params['bill']:
+                    print('Не удалось найти параметры для {}'.format(incidents[incident].account_name))
         else:
             login = Web.get_login(argus, incidents[incident].incident_number)
             if login:
@@ -133,6 +136,7 @@ def get_onyma_params(arguments):
     connect.close()
     onyma.close()
     argus.close()
+    return count
             
 
 def print_report(incidents):
@@ -173,14 +177,14 @@ def main():
     arguments = [[incidents, list(incidents.keys())[x::Settings.threads_count], x] for x in range(0, Settings.threads_count)]
     
     with ThreadPoolExecutor(max_workers=Settings.threads_count) as executor:
-        executor.map(get_onyma_params, arguments) 
-        
+        count = executor.map(get_onyma_params, arguments) 
+    
     # Запись инцидентов в файл
     with open('resources{}incidents.db'.format(os.sep), 'bw') as file_dump:
         pickle.dump(incidents, file_dump)
         
     print_report(incidents)
-
+    print('\nОбработано инцидентов по потокам: ', list(count))    
     print('Время окончания: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
 
 
