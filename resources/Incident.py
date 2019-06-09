@@ -22,11 +22,14 @@ class Incident():
         self.port = None        
         self.proc_date = None
         self.session_count = None
+        self.traffic = None
         self.tariff_speed = None
         self.tv = None
         self.day_count = None
         self.min_speed = None
-        self.avg_speed = None        
+        self.avg_speed = None
+        self.up_snr = None
+        self.dw_snr = None
         
     
     def __gt__(self, other):

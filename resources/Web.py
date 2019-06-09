@@ -158,7 +158,16 @@ def get_account_data(onyma, incident,  date):
     re_hostname =  r'ST: (\S+) atm 0/(\d+)/0/(\d+)'
     #re_hostname = r'(STV[\w-]+?) atm \d/(\d+)/\d/(\d+)'
     try:
-        html = onyma.get("https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=201&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid))        
+        # Траффик абонента
+        link = "https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=3&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid)
+        html = onyma.get(link)
+        try:
+            result['traffic'] = re.search(r'<td class="foot" align="right">(.+)&nbsp;Mb</td>',  html.text.__repr__()).group(1)
+        except:
+            result['traffic'] = '0'
+        # Количество сессий и порт DSLAM
+        link = "https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=201&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid)
+        html = onyma.get(link)        
         #print("https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=201&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid))
         #print(html.text)
         result['session_count'] = int(re.search(r'<td class="foot">Все</td><td class="pgout" colspan="5">.+?<b>(\d+)</b>',  html.text.__repr__()).group(1))
@@ -176,6 +185,4 @@ def get_account_data(onyma, incident,  date):
     return result
 
 #onyma = connect_onyma()
-#print(find_login_param(onyma, login='wrm3hherzp'))
-#print(find_login_param(onyma, account_name='rtc0000070526'))
 #onyma.close()

@@ -53,9 +53,8 @@ def update_accounts_data(arguments):
             incidents[incident].board = None
             incidents[incident].port = None
             incidents[incident].session_count = None
+            incidents[incident].traffic = None
             incidents[incident].proc_date = datetime.date.today()
-            
-            
             continue
         if (account_data['session_count'] > 0) and (account_data['hostname'] is None):
             print('Сессии были, но DSLAM не распознан: {}'.format(incidents[incident].account_name))
@@ -63,10 +62,9 @@ def update_accounts_data(arguments):
         incidents[incident].board = account_data['board']
         incidents[incident].port = account_data['port']
         incidents[incident].session_count = account_data['session_count']
-        incidents[incident].proc_date = datetime.date.today()        
-
-        #print(incidents[incident].account_name, account_data)
-
+        incidents[incident].traffic = account_data['traffic']
+        incidents[incident].proc_date = datetime.date.today()
+        
 
 def generate_report_file(incidents):
     # Подключение к MySQL
@@ -91,10 +89,11 @@ def generate_report_file(incidents):
             incident.tariff_speed = accounts_info[incident.account_name]['tariff_speed']
             incident.tv = accounts_info[incident.account_name]['tv']
         incident.day_count = (datetime.datetime.now() - incident.end_time).days
-        speed = all_speed.get('{}/{}/{}'.format(incident.hostname, incident.board, incident.port),  {'min_speed':  '-', 'avg_speed': '-'})
+        speed = all_speed.get('{}/{}/{}'.format(incident.hostname, incident.board, incident.port),  {'min_speed':  '-', 'avg_speed': '-', 'up_snr': '-', 'dw_snr': '-'})
         incident.min_speed = speed['min_speed']
-        incident.avg_speed = speed['avg_speed']            
-    
+        incident.avg_speed = speed['avg_speed']
+        incident.up_snr = speed['up_snr']
+        incident.dw_snr = speed['dw_snr']
     #for account in accounts_info:
         #print(account, accounts_info[account])
         
@@ -136,16 +135,19 @@ def generate_report_file(incidents):
             sh['K{}'.format(row)].value = incident.tariff_speed
             sh['L{}'.format(row)].value = incident.tv
             sh['M{}'.format(row)].value = incident.session_count
-            sh['N{}'.format(row)].value = incident.min_speed
-            sh['O{}'.format(row)].value = incident.avg_speed
+            sh['N{}'.format(row)].value = incident.traffic
+            sh['O{}'.format(row)].value = incident.min_speed
+            sh['P{}'.format(row)].value = incident.avg_speed
+            sh['Q{}'.format(row)].value = incident.up_snr
+            sh['R{}'.format(row)].value = incident.dw_snr
             try:
-                sh['P{}'.format(row)].value = data_profiles['{}/{}/{}'.format(incident.hostname, incident.board, incident.port)]['profile_name']
-                sh['Q{}'.format(row)].value = data_profiles['{}/{}/{}'.format(incident.hostname, incident.board, incident.port)]['dw_limit']
+                sh['S{}'.format(row)].value = data_profiles['{}/{}/{}'.format(incident.hostname, incident.board, incident.port)]['profile_name']
+                sh['T{}'.format(row)].value = data_profiles['{}/{}/{}'.format(incident.hostname, incident.board, incident.port)]['dw_limit']
             except:
                 pass
-            sh['R{}'.format(row)].value = incident.hostname
-            sh['S{}'.format(row)].value = incident.board
-            sh['T{}'.format(row)].value = incident.port
+            sh['U{}'.format(row)].value = incident.hostname
+            sh['V{}'.format(row)].value = incident.board
+            sh['W{}'.format(row)].value = incident.port
         wb.save('files{}Край {}.xlsx'.format(os.sep, datetime.datetime.now().strftime('%Y-%m-%d')))
 
     # Закрытие подключения к MySQL

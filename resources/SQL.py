@@ -48,7 +48,9 @@ def get_all_speed(cursor):
                 board,
                 port,
                 ROUND(MIN(max_dw_rate)),
-                ROUND(AVG(max_dw_rate))
+                ROUND(AVG(max_dw_rate)),
+                MIN(up_snr),
+                MIN(dw_snr)
             FROM
                 data_dsl
             WHERE
@@ -59,5 +61,5 @@ def get_all_speed(cursor):
     cursor.execute(command)
     data = cursor.fetchall()
     for port in data:
-        result['{}/{}/{}'.format(port[0], port[1], port[2])] = {'min_speed':  port[3], 'avg_speed': port[4]}    
+        result['{}/{}/{}'.format(port[0], port[1], port[2])] = {'min_speed':  port[3], 'avg_speed': port[4], 'up_snr': port[5], 'dw_snr': port[6]}    
     return result
