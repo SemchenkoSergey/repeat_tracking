@@ -171,9 +171,10 @@ def load_incidents():
 def main():  
     print('Время запуска: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     print('Загрузка сохраненных инцидентов')
-    incidents = load_incidents()    
-    read_argus_file(incidents)
+    incidents = load_incidents()
     print_report(incidents)
+    read_argus_file(incidents)
+    #print_report(incidents)
     arguments = [[incidents, list(incidents.keys())[x::Settings.threads_count], x] for x in range(0, Settings.threads_count)]
     
     with ThreadPoolExecutor(max_workers=Settings.threads_count) as executor:
