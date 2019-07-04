@@ -68,75 +68,79 @@ def read_argus_file(incidents):
 
 
 def get_onyma_params(arguments):
-    print('запуск потока обработки инцидентов...')
-    count = 0
-    incidents = arguments[0]
-    keys = arguments[1]
-    thread_number = arguments[2]
-    re_port = re.compile(r'(STV.+?)\[.*?\(Л\)\s+?-\s+?(.+?)-\s?(\d+)')
-    # Подключение к MySQL
-    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()      
-    # Открытие соединений Onyma и Argus
-    onyma = Web.connect_onyma()
-    argus = Web.connect_argus()
-    
-    for incident in keys:
-        count += 1
-        # Если параметры уже установлены
-        if incidents[incident].bill is not None:
-            continue
-        # Если нет
-        #print('Поток {}, обработка инцидента {}'.format(thread_number, incident))
-        params = False
-        if incidents[incident].account_name:
-            # Если номер карты есть, но параметры еще не определены
-            print('Новая попытка получить параметры для {}'.format(incidents[incident].account_name))
-            params = Web.find_login_param(onyma, account_name=incidents[incident].account_name)
-            if params:
-                if not params['bill']:
-                    print('Не удалось найти параметры для {}'.format(incidents[incident].account_name))
-        else:
-            login = Web.get_login(argus, incidents[incident].incident_number)
-            if login:
-                params = Web.find_login_param(onyma, login=login)
+    try:
+        print('запуск потока обработки инцидентов...')
+        count = 0
+        incidents = arguments[0]
+        keys = arguments[1]
+        thread_number = arguments[2]
+        re_port = re.compile(r'(STV.+?)\[.*?\(Л\)\s+?-\s+?(.+?)-\s?(\d+)')
+        # Подключение к MySQL
+        connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+        cursor = connect.cursor()      
+        # Открытие соединений Onyma и Argus
+        onyma = Web.connect_onyma()
+        argus = Web.connect_argus()
+        
+        for incident in keys:
+            count += 1
+            # Если параметры уже установлены
+            if incidents[incident].bill is not None:
+                continue
+            # Если нет
+            #print('Поток {}, обработка инцидента {}'.format(thread_number, incident))
+            params = False
+            if incidents[incident].account_name:
+                # Если номер карты есть, но параметры еще не определены
+                print('Новая попытка получить параметры для {}'.format(incidents[incident].account_name))
+                params = Web.find_login_param(onyma, account_name=incidents[incident].account_name)
+                if params:
+                    if not params['bill']:
+                        print('Не удалось найти параметры для {}'.format(incidents[incident].account_name))
             else:
-                # В комментариях Argus нет логина
-                try:
-                    port = '{}-{}-{}'.format(re_port.search(incidents[incident].ldn).group(1).strip(), re_port.search(incidents[incident].ldn).group(2).strip(), re_port.search(incidents[incident].ldn).group(3).strip())
-                except:
-                    # Не удалось распознать порт DSLAM
-                    print('В комментариях нет логина, порт DSLAM в линейных данных не распознан ({})'.format(incident))
-                    continue
-                phone_number = SQL.get_phone_number(cursor, port)
-                if phone_number:
-                    account_name = SQL.get_account_name_phone(cursor, phone_number)
-                    if account_name:
-                        params = Web.find_login_param(onyma, account_name=account_name)
-                    else:
-                        # Не удалось найти аккаунт по номеру телефона
-                        print('Не удалось найти учетное имя по номеру телефона ({})'.format(incident))
-                        continue
+                login = Web.get_login(argus, incidents[incident].incident_number)
+                if login:
+                    params = Web.find_login_param(onyma, login=login)
                 else:
-                    # Не удалось найти номер телефона по порту
-                    print('Не удалось найти номер телефона по порту DSLAM ({})'.format(incident))
-                    continue
-        if params:
-            incidents[incident].account_name = params['account_name']
-            incidents[incident].bill = params['bill']
-            incidents[incident].dmid = params['dmid']
-            incidents[incident].tmid = params['tmid']
-            if params['bill']:
-                print('Найдены параметры для инцидента {}: account_name - {}, bill - {}, dmid - {}, tmid - {}'.format(incident, params['account_name'], params['bill'], params['dmid'], params['tmid']))
+                    # В комментариях Argus нет логина
+                    try:
+                        port = '{}-{}-{}'.format(re_port.search(incidents[incident].ldn).group(1).strip(), re_port.search(incidents[incident].ldn).group(2).strip(), re_port.search(incidents[incident].ldn).group(3).strip())
+                    except:
+                        # Не удалось распознать порт DSLAM
+                        print('В комментариях нет логина, порт DSLAM в линейных данных не распознан ({})'.format(incident))
+                        continue
+                    phone_number = SQL.get_phone_number(cursor, port)
+                    if phone_number:
+                        account_name = SQL.get_account_name_phone(cursor, phone_number)
+                        if account_name:
+                            params = Web.find_login_param(onyma, account_name=account_name)
+                        else:
+                            # Не удалось найти аккаунт по номеру телефона
+                            print('Не удалось найти учетное имя по номеру телефона ({})'.format(incident))
+                            continue
+                    else:
+                        # Не удалось найти номер телефона по порту
+                        print('Не удалось найти номер телефона по порту DSLAM ({})'.format(incident))
+                        continue
+            if params:
+                incidents[incident].account_name = params['account_name']
+                incidents[incident].bill = params['bill']
+                incidents[incident].dmid = params['dmid']
+                incidents[incident].tmid = params['tmid']
+                if params['bill']:
+                    print('Найдены параметры для инцидента {}: account_name - {}, bill - {}, dmid - {}, tmid - {}'.format(incident, params['account_name'], params['bill'], params['dmid'], params['tmid']))
+                else:
+                    print('Найдено имя аккаунта для {}: {}'.format(incident, params['account_name']))
             else:
-                print('Найдено имя аккаунта для {}: {}'.format(incident, params['account_name']))
-        else:
-            continue
-    # Закрытие соединений
-    connect.close()
-    onyma.close()
-    argus.close()
-    return count
+                continue
+        # Закрытие соединений
+        connect.close()
+        onyma.close()
+        argus.close()
+        return count
+    except Exception as ex:
+        print(ex)
+        print('В потоке {} обработано {} инцидентов.'.format(thread_number, count))
             
 
 def print_report(incidents):
