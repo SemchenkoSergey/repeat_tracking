@@ -8,6 +8,7 @@ import MySQLdb
 import re
 import pickle
 import csv
+import time
 from resources import Incident
 from concurrent.futures import ThreadPoolExecutor
 from resources import Web
@@ -181,15 +182,23 @@ def main():
     #print_report(incidents)
     arguments = [[incidents, list(incidents.keys())[x::Settings.threads_count], x] for x in range(0, Settings.threads_count)]
     
-    with ThreadPoolExecutor(max_workers=Settings.threads_count) as executor:
-        count = executor.map(get_onyma_params, arguments) 
+    # Получение параметров для Онимы
+    while True:
+        with ThreadPoolExecutor(max_workers=Settings.threads_count) as executor:
+            count = list(executor.map(get_onyma_params, arguments))
+        
+        if None not in count:
+            print('\nОбработано инцидентов по потокам: ', count)
+            break
+        print('Возникла ошибка, обработано: {}\nЗапуск новой попытки через 5 минут...'.format(count))
+        time.sleep(300)
+        
     
     # Запись инцидентов в файл
     with open('resources{}incidents.db'.format(os.sep), 'bw') as file_dump:
         pickle.dump(incidents, file_dump)
         
     print_report(incidents)
-    print('\nОбработано инцидентов по потокам: ', list(count))    
     print('Время окончания: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
 
 
