@@ -18,3 +18,6 @@ argus_password = ''
 # Onyma
 onyma_login = ''
 onyma_password = ''
+
+# Путь для копирования на сетевой диск
+path_name = ''

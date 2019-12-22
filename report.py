@@ -9,6 +9,7 @@ import MySQLdb
 import datetime
 import openpyxl
 import csv
+import shutil
 from resources import Incident
 from concurrent.futures import ThreadPoolExecutor
 from resources import Web
@@ -67,6 +68,8 @@ def update_accounts_data(arguments):
         
 
 def generate_report_file(incidents):
+    # Имя файла с отчетом
+    report_file = 'files{}Край {}.xlsx'.format(os.sep, datetime.datetime.now().strftime('%Y-%m-%d'))
     # Подключение к MySQL
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
@@ -148,11 +151,22 @@ def generate_report_file(incidents):
             sh['U{}'.format(row)].value = incident.hostname
             sh['V{}'.format(row)].value = incident.board
             sh['W{}'.format(row)].value = incident.port
-        wb.save('files{}Край {}.xlsx'.format(os.sep, datetime.datetime.now().strftime('%Y-%m-%d')))
+        wb.save(report_file)
 
     # Закрытие подключения к MySQL
     connect.close()
     
+    # Копирование файла на сетевой диск
+    if os.path.exists(report_file):
+        try:
+            shutil.copy(report_file, '{}{}{}'.format(Settings.path_name, os.sep, datetime.datetime.now().strftime('%Y-%m')))
+        except Exception as ex:
+            print('Ошибка копирования на сетевой диск')
+            print(ex)
+        else:
+            print('Файл скопирован')
+    else:
+        print('Файл отчета не создан!')
     
 
 def sort_incidents(incidents):
