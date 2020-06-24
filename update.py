@@ -9,6 +9,7 @@ import re
 import pickle
 import csv
 import time
+import random
 from resources import Incident
 from concurrent.futures import ThreadPoolExecutor
 from resources import Web
@@ -39,15 +40,15 @@ def read_argus_file(incidents):
                 technology = sh['P{}'.format(row)].value
                 if technology != 'по технологии ADSL':
                     continue
-                end_time = sh['U{}'.format(row)].value
+                end_time = sh['T{}'.format(row)].value
                 if (datetime.datetime.now() - end_time).days > Settings.days:
                     continue
                 incident_number = sh['A{}'.format(row)].value
                 service_number = sh['B{}'.format(row)].value
-                fio = sh['V{}'.format(row)].value
-                address = '{}, {}'.format(sh['W{}'.format(row)].value, sh['X{}'.format(row)].value)
+                fio = sh['W{}'.format(row)].value
+                address = '{}, {}'.format(sh['X{}'.format(row)].value, sh['Y{}'.format(row)].value)
                 client_type = sh['K{}'.format(row)].value
-                ldn =  sh['AB{}'.format(row)].value
+                ldn =  sh['AC{}'.format(row)].value
                 # Если инцидент уже есть, то обновляю дату закрытия
                 if service_number in incidents:
                     if end_time <= incidents[service_number].end_time:
@@ -70,12 +71,13 @@ def read_argus_file(incidents):
 
 def get_onyma_params(arguments):
     try:
-        print('запуск потока обработки инцидентов...')
+        time.sleep(random.randint(10, 180))
         count = 0
         incidents = arguments[0]
         keys = arguments[1]
         thread_number = arguments[2]
         re_port = re.compile(r'(STV.+?)\[.*?\(Л\)\s+?-\s+?(.+?)-\s?(\d+)')
+        print('запуск {} потока обработки инцидентов...'.format(thread_number))
         # Подключение к MySQL
         connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
         cursor = connect.cursor()      

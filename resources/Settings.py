@@ -1,4 +1,5 @@
 # coding: utf8
+import os
 
 threads_count = 5
 
@@ -18,6 +19,5 @@ argus_password = ''
 # Onyma
 onyma_login = ''
 onyma_password = ''
-
 # Путь для копирования на сетевой диск
-path_name = ''
+path_name = '{}mnt{}Y{}...{}...{}...{}...'.format(os.sep, os.sep, os.sep, os.sep, os.sep, os.sep)

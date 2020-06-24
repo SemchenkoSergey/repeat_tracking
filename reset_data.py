@@ -3,7 +3,7 @@
 
 import pickle
 import os
-
+import datetime
 
 
 def main():
@@ -11,6 +11,8 @@ def main():
             incidents = pickle.load(file_load)
     for incident in incidents:
         incidents[incident].proc_date = None
+        #if (datetime.datetime.now() - incidents[incident].end_time).days < 0:
+            #incidents[incident].end_time = datetime.datetime(2020,3,1)
     with open('resources{}incidents.db'.format(os.sep), 'bw') as file_dump:
         pickle.dump(incidents, file_dump)    
 
