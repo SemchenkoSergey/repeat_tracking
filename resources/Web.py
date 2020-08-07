@@ -7,6 +7,8 @@ import requests
 from resources import Settings
 from bs4 import BeautifulSoup as BS
 #import Settings
+#import Incident
+#import datetime
 
 
 
@@ -124,7 +126,7 @@ def find_login_param(onyma, login=None, account_name=None):
         links = BS(html, 'lxml').find_all('a')
         for link in links:
             url = link.get('href')
-            if ('service=201' in url) and (link.text == account_name):
+            if ('service=201' in url) or ('service=4610' in url) and (link.text == account_name):
                 urls.append(url_main + url)
     except:
         return False
@@ -157,6 +159,8 @@ def get_account_data(onyma, incident,  date):
     result = {}
     re_hostname =  r'ST: (\S+) atm 0/(\d+)/0/(\d+)'
     #re_hostname = r'(STV[\w-]+?) atm \d/(\d+)/\d/(\d+)'
+    #re_hostname_etth = r'ST: (\S+).+?(\d+) '   #для etth
+    re_hostname_etth = r'ST: ([^ :]+).+?(0/)+(\d+)'
     try:
         # Траффик абонента
         link = "https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=3&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid)
@@ -171,18 +175,49 @@ def get_account_data(onyma, incident,  date):
         #print("https://10.144.196.37/onyma/main/ddstat.htms?bill={}&dt={}&mon={}&year={}&service=201&dmid={}&tmid={}".format(bill,  date.day,  date.month, date.year,  dmid,  tmid))
         #print(html.text)
         result['session_count'] = int(re.search(r'<td class="foot">Все</td><td class="pgout" colspan="5">.+?<b>(\d+)</b>',  html.text.__repr__()).group(1))
-        argus_data = re.search(re_hostname, html.text.__repr__())
-        if argus_data:
-            result['hostname'] = argus_data.group(1)
-            result['board'] = int(argus_data.group(2))
-            result['port'] = int(argus_data.group(3))
-        else:
-            result['hostname'] = None
-            result['board'] = None
-            result['port'] = None             
-    except:
+        # Для ADSL
+        if incident.technology == 'по технологии ADSL':
+            argus_data = re.search(re_hostname, html.text.__repr__())
+            if argus_data:
+                result['hostname'] = argus_data.group(1)
+                result['board'] = int(argus_data.group(2))
+                result['port'] = int(argus_data.group(3))
+            else:
+                result['hostname'] = None
+                result['board'] = None
+                result['port'] = None             
+    
+        # Для ETTH
+        elif incident.technology == 'с использованием FTTx':
+            argus_data = re.search(re_hostname_etth, html.text.__repr__())
+            if argus_data and (('-OLT' in argus_data.group(1)) or (';' in argus_data.group(1)) or ('STV-' not in argus_data.group(1))):
+                argus_data = None
+            if argus_data:
+                result['etth_hostname'] = argus_data.group(1)
+                #result['etth_port'] = int(argus_data.group(2))
+                result['etth_port'] = int(argus_data.group(3))
+            else:
+                #print(html.text.__repr__())
+                result['etth_hostname'] = None
+                result['etth_port'] = None       
+        return result
+    except Exception as ex:
+        print(ex)
         return False
-    return result
 
 #onyma = connect_onyma()
 #onyma.close()
+
+#print(find_login_param(onyma, account_name='rtc0000006376'))
+#incident =  Incident.Incident(incident_number='111',\
+                                                 #service_number='111',\
+                                                 #fio='111',\
+                                                 #address='111',\
+                                                 #client_type='111',\
+                                                 #end_time='111',\
+                                                 #ldn='111',\
+                                                 #technology='с использованием FTTx')
+#incident.bill='20069193'
+#incident.dmid='25259965'
+#incident.tmid= '1000001079'
+#print(get_account_data(onyma, incident, datetime.datetime.now()))

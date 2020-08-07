@@ -12,6 +12,7 @@ class Incident():
         self.client_type = kwargs['client_type']
         self.end_time = kwargs['end_time']
         self.ldn = kwargs['ldn']
+        self.technology = kwargs['technology']
         self.account_name = None
         self.phone_number = None
         self.bill = None
@@ -30,6 +31,12 @@ class Incident():
         self.avg_speed = None
         self.up_snr = None
         self.dw_snr = None
+        self.etth_hostname = None
+        self.etth_port = None
+        self.etth_input_errors = None
+        self.etth_crc = None
+        self.etth_speed = None
+        self.etth_ip = None
         
     
     def __gt__(self, other):
@@ -41,7 +48,10 @@ class Incident():
     
     
     def __str__(self):
-        result = 'account_name: {}\nincident_number: {}\nservice_number: {}\nfio: {}\naddress: {}\nclient_type: {}\nend_time: {}\nldn: {}\n'.format(self.account_name, self.incident_number, self.service_number, self.fio, self.address, self.client_type, self.end_time.strftime('%d.%m.%Y %H:%M'), self.ldn)
+        result = 'technology: {}\naccount_name: {}\nincident_number: {}\nservice_number: {}\nfio: {}\naddress: {}\nclient_type: {}\nend_time: {}\nldn: {}\n'.format(self.technology, self.account_name, self.incident_number, self.service_number, self.fio, self.address, self.client_type, self.end_time.strftime('%d.%m.%Y %H:%M'), self.ldn)
         if self.proc_date is not None:
-            result = result + 'hostname: {}\nboard: {}\nport: {}\nsession_count: {}\nproc_date: {}\n'.format(self.hostname, self.board, self.port, self.session_count, self.proc_date)
+            if self.technology == 'по технологии ADSL':
+                result = result + 'hostname: {}\nboard: {}\nport: {}\nsession_count: {}\nproc_date: {}\n'.format(self.hostname, self.board, self.port, self.session_count, self.proc_date)
+            elif self.technology == 'с использованием FTTx':
+                result = result + 'hostname: {}\nport: {}\ninput_errors: {}\ncrc: {}\nsession_count: {}\nproc_date: {}\n'.format(self.etth_hostname, self.etth_port, self.etth_input_errors, self.etth_crc, self.session_count, self.proc_date)
         return result

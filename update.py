@@ -23,7 +23,7 @@ def read_argus_file(incidents):
     file_list = ['files' + os.sep + x for x in os.listdir('files')]
     for file in file_list:
         if file.split('.')[-1] != 'xlsx':
-            #os.remove(file)
+            os.remove(file)
             continue
         print('Обработка файла {}'.format(file))
         try:
@@ -38,7 +38,7 @@ def read_argus_file(incidents):
                 continue
             for row in  range(2, sh.max_row + 1):
                 technology = sh['P{}'.format(row)].value
-                if technology != 'по технологии ADSL':
+                if technology not in ['по технологии ADSL', 'с использованием FTTx']:
                     continue
                 end_time = sh['T{}'.format(row)].value
                 if (datetime.datetime.now() - end_time).days > Settings.days:
@@ -63,8 +63,9 @@ def read_argus_file(incidents):
                                                  fio=fio,\
                                                  address=address,\
                                                  client_type=client_type,\
-                                                 end_time=end_time,
-                                                 ldn=ldn)                  
+                                                 end_time=end_time,\
+                                                 ldn=ldn,\
+                                                 technology=technology)                  
                     incidents[service_number] = incident   
         os.remove(file)
 
@@ -101,30 +102,37 @@ def get_onyma_params(arguments):
                     if not params['bill']:
                         print('Не удалось найти параметры для {}'.format(incidents[incident].account_name))
             else:
-                login = Web.get_login(argus, incidents[incident].incident_number)
-                if login:
-                    params = Web.find_login_param(onyma, login=login)
+                if 'СПД' in incidents[incident].service_number and 'EQU' not in incidents[incident].service_number:
+                    account_name = re.search(r'СПД(\S+)', incidents[incident].service_number).group(1)
+                    params = Web.find_login_param(onyma, account_name=account_name.lower())
+                #elif 'IPTV' in incidents[incident].service_number:
+                    #account_name = re.search(r'IPTV(\S+)', incidents[incident].service_number).group(1)
+                    #params = Web.find_login_param(onyma, account_name=account_name.lower())
                 else:
-                    # В комментариях Argus нет логина
-                    try:
-                        port = '{}-{}-{}'.format(re_port.search(incidents[incident].ldn).group(1).strip(), re_port.search(incidents[incident].ldn).group(2).strip(), re_port.search(incidents[incident].ldn).group(3).strip())
-                    except:
-                        # Не удалось распознать порт DSLAM
-                        print('В комментариях нет логина, порт DSLAM в линейных данных не распознан ({})'.format(incident))
-                        continue
-                    phone_number = SQL.get_phone_number(cursor, port)
-                    if phone_number:
-                        account_name = SQL.get_account_name_phone(cursor, phone_number)
-                        if account_name:
-                            params = Web.find_login_param(onyma, account_name=account_name)
-                        else:
-                            # Не удалось найти аккаунт по номеру телефона
-                            print('Не удалось найти учетное имя по номеру телефона ({})'.format(incident))
-                            continue
+                    login = Web.get_login(argus, incidents[incident].incident_number)
+                    if login:
+                        params = Web.find_login_param(onyma, login=login)
                     else:
-                        # Не удалось найти номер телефона по порту
-                        print('Не удалось найти номер телефона по порту DSLAM ({})'.format(incident))
-                        continue
+                        # В комментариях Argus нет логина
+                        try:
+                            port = '{}-{}-{}'.format(re_port.search(incidents[incident].ldn).group(1).strip(), re_port.search(incidents[incident].ldn).group(2).strip(), re_port.search(incidents[incident].ldn).group(3).strip())
+                        except:
+                            # Не удалось распознать порт DSLAM
+                            print('В комментариях нет логина, порт DSLAM в линейных данных не распознан ({})'.format(incident))
+                            continue
+                        phone_number = SQL.get_phone_number(cursor, port)
+                        if phone_number:
+                            account_name = SQL.get_account_name_phone(cursor, phone_number)
+                            if account_name:
+                                params = Web.find_login_param(onyma, account_name=account_name)
+                            else:
+                                # Не удалось найти аккаунт по номеру телефона
+                                print('Не удалось найти учетное имя по номеру телефона ({})'.format(incident))
+                                continue
+                        else:
+                            # Не удалось найти номер телефона по порту
+                            print('Не удалось найти номер телефона по порту DSLAM ({})'.format(incident))
+                            continue
             if params:
                 incidents[incident].account_name = params['account_name']
                 incidents[incident].bill = params['bill']
@@ -180,7 +188,10 @@ def main():
     print('Загрузка сохраненных инцидентов')
     incidents = load_incidents()
     print_report(incidents)
+    #incidents = {}
     read_argus_file(incidents)
+    #for i in incidents:
+        #print(incidents[i])
     #print_report(incidents)
     arguments = [[incidents, list(incidents.keys())[x::Settings.threads_count], x] for x in range(0, Settings.threads_count)]
     
