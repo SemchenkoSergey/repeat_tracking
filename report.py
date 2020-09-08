@@ -131,7 +131,7 @@ def get_etth_port_info(incident, switchs):
             return None
         incident.etth_ip = ip
         result = tn.interface_info(incident.etth_port)
-        tn.clear_counters(incident.etth_port)
+        #tn.clear_counters(incident.etth_port)
         del tn
         return result
     else:
